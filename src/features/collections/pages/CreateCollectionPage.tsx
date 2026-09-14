@@ -2,19 +2,19 @@ import { useState, type FormEvent } from "react";
 import { ArrowRight, BookOpen, ChevronLeft, FolderPlus } from "lucide-react";
 import { navigate } from "../../../app/navigation";
 
-type CreateCollectionPageProps = { onCreate: (name: string) => void };
+type CreateCollectionPageProps = { onCreate: (name: string) => Promise<void> };
 
 export function CreateCollectionPage({ onCreate }: CreateCollectionPageProps) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const value = name.trim();
     if (value.length < 2) {
       setError("Give this collection a name with at least 2 characters.");
       return;
     }
-    onCreate(value);
+    await onCreate(value);
   };
 
   return (
