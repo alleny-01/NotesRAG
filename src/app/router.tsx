@@ -7,6 +7,7 @@ import { LibraryPage } from "../features/collections/pages/LibraryPage";
 import { UploadPage } from "../features/collections/pages/UploadPage";
 import { WorkspacePage } from "../features/collections/pages/WorkspacePage";
 import { useUploadDocument } from "../features/documents/hooks/useUploadDocument";
+import { useDocumentStatus } from "../features/documents/hooks/useDocumentStatus";
 import { navigate, useAppRoute } from "./navigation";
 import { OnboardingPage } from "../features/onboarding/pages/OnboardingPage";
 
@@ -18,6 +19,7 @@ function ProductApp() {
   const route = useAppRoute() ?? { name: "library" as const };
   const collectionState = useCollections();
   const documentUpload = useUploadDocument();
+  useDocumentStatus();
   const collections = collectionState.collections;
   const activeCollection = "collectionId" in route ? collections.find((collection) => collection.id === route.collectionId) : undefined;
 

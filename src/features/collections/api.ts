@@ -3,10 +3,30 @@ import { createContentHash, extractText } from "../documents/extractText";
 import type { Collection, CollectionDocument } from "./types/domain";
 
 type CollectionRow = { id: string; name: string; created_at: string; documents?: DocumentRow[] };
-type DocumentRow = { id: string; filename: string; storage_path: string; file_size_bytes: number; status: CollectionDocument["status"]; page_count: number | null; created_at: string };
+type DocumentRow = {
+  id: string;
+  filename: string;
+  storage_path: string;
+  file_size_bytes: number;
+  status: CollectionDocument["status"];
+  page_count: number | null;
+  chunk_count: number | null;
+  embedded_chunk_count: number | null;
+  created_at: string;
+};
 
 function toDocument(row: DocumentRow): CollectionDocument {
-  return { id: row.id, filename: row.filename, storagePath: row.storage_path, size: row.file_size_bytes, status: row.status, pageCount: row.page_count ?? undefined, addedAt: row.created_at };
+  return {
+    id: row.id,
+    filename: row.filename,
+    storagePath: row.storage_path,
+    size: row.file_size_bytes,
+    status: row.status,
+    pageCount: row.page_count ?? undefined,
+    chunkCount: row.chunk_count ?? undefined,
+    embeddedChunkCount: row.embedded_chunk_count ?? undefined,
+    addedAt: row.created_at,
+  };
 }
 
 function toCollection(row: CollectionRow): Collection {
@@ -27,7 +47,7 @@ async function currentUserId() {
 export async function listCollections(): Promise<Collection[]> {
   const { data, error } = await supabase
     .from("collections")
-    .select("id, name, created_at, documents(id, filename, storage_path, file_size_bytes, status, page_count, created_at)")
+    .select("id, name, created_at, documents(id, filename, storage_path, file_size_bytes, status, page_count, chunk_count, embedded_chunk_count, created_at)")
     .order("created_at", { ascending: false })
     .order("created_at", { foreignTable: "documents", ascending: false });
   throwIfError(error);
@@ -86,11 +106,19 @@ export async function uploadDocument(collectionId: string, file: File) {
     status: "pending",
     page_count: extracted.pageCount,
     content_hash: contentHash,
-  }).select("id, filename, storage_path, file_size_bytes, status, page_count, created_at").single();
+  }).select("id, filename, storage_path, file_size_bytes, status, page_count, chunk_count, embedded_chunk_count, created_at").single();
 
   if (error) {
     await supabase.storage.from("notes-documents").remove([storagePath]);
     throwIfError(error);
   }
-  return toDocument(data as DocumentRow);
+  const document = toDocument(data as DocumentRow);
+  void supabase.functions
+    .invoke("ingest-document", { body: { documentId: document.id, pages: extracted.pages } })
+    .then(({ error: ingestError }) => {
+      if (!ingestError) return;
+      return supabase.from("documents").update({ status: "failed" }).eq("id", document.id);
+    });
+
+  return document;
 }
