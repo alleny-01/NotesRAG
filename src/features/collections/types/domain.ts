@@ -1,8 +1,9 @@
-export type DocumentStatus = "ready" | "processing" | "failed";
+export type DocumentStatus = "pending" | "embedding" | "ready" | "failed";
 
 export type CollectionDocument = {
   id: string;
   filename: string;
+  storagePath: string;
   size: number;
   pageCount?: number;
   status: DocumentStatus;

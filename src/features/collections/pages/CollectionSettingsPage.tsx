@@ -11,9 +11,9 @@ import type { Collection } from "../types/domain";
 
 type CollectionSettingsPageProps = {
   collection: Collection;
-  onRename: (collectionId: string, name: string) => void;
-  onRemoveDocument: (collectionId: string, documentId: string) => void;
-  onDelete: (collectionId: string) => void;
+  onRename: (collectionId: string, name: string) => Promise<void>;
+  onRemoveDocument: (collectionId: string, documentId: string) => Promise<void>;
+  onDelete: (collectionId: string) => Promise<void>;
 };
 
 function formatDate(value: string) {
@@ -38,11 +38,11 @@ export function CollectionSettingsPage({
   const selectedDocument = collection.documents.find(
     (document) => document.id === documentToRemove,
   );
-  const onSubmitRename = (event: FormEvent<HTMLFormElement>) => {
+  const onSubmitRename = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const nextName = name.trim();
     if (!nextName) return;
-    onRename(collection.id, nextName);
+    await onRename(collection.id, nextName);
     setRenameSaved(true);
     window.setTimeout(() => setRenameSaved(false), 2200);
   };
@@ -230,7 +230,7 @@ export function CollectionSettingsPage({
               <button
                 type="button"
                 onClick={() => {
-                  onRemoveDocument(collection.id, selectedDocument.id);
+                  void onRemoveDocument(collection.id, selectedDocument.id);
                   setDocumentToRemove(null);
                 }}
                 className="h-9 rounded-md bg-[#963e43] px-3 text-[12px] font-medium text-white hover:bg-[#783034]"
@@ -276,7 +276,7 @@ export function CollectionSettingsPage({
               </button>
               <button
                 type="button"
-                onClick={() => onDelete(collection.id)}
+                onClick={() => { void onDelete(collection.id); }}
                 className="inline-flex h-9 items-center gap-2 rounded-md bg-[#963e43] px-3 text-[12px] font-medium text-white hover:bg-[#783034]"
               >
                 Delete <ArrowRight size={14} />

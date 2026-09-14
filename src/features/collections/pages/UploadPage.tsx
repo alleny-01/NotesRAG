@@ -12,7 +12,7 @@ import type { Collection } from "../types/domain";
 
 type Props = {
   collection: Collection;
-  onAddDocument: (collectionId: string, file: File) => void;
+  onAddDocument: (collectionId: string, file: File) => Promise<void>;
 };
 const maxSize = 20 * 1024 * 1024;
 const supported = ["application/pdf", "text/plain", "text/markdown"];
@@ -39,12 +39,10 @@ export function UploadPage({ collection, onAddDocument }: Props) {
           : "Choose a text-based PDF, TXT, or Markdown file.",
       );
       return;
-    }
-    setChecking(true);
-    window.setTimeout(() => {
-      onAddDocument(collection.id, file);
-      setChecking(false);
-    }, 650);
+    }    setChecking(true);
+    void onAddDocument(collection.id, file)
+      .catch((uploadError: unknown) => setError(uploadError instanceof Error ? uploadError.message : "We could not upload this document."))
+      .finally(() => setChecking(false));
   };
   const documents = collection.documents;
   return (
@@ -129,7 +127,7 @@ export function UploadPage({ collection, onAddDocument }: Props) {
               <div className="flex items-center justify-between px-4 py-3">
                 <p className="text-[12px] font-semibold">Added documents</p>
                 <span className="text-[11px] text-[var(--muted)]">
-                  {documents.length} ready
+                  {documents.length} saved
                 </span>
               </div>
               {documents.map((document) => (
@@ -145,7 +143,7 @@ export function UploadPage({ collection, onAddDocument }: Props) {
                       {document.filename}
                     </p>
                     <p className="mt-0.5 text-[10px] text-[var(--muted)]">
-                      {size(document.size)} · Ready for ingestion
+                      {size(document.size)} · Saved · awaiting ingestion
                     </p>
                   </div>
                   <CheckCircle2 size={17} className="text-[#63945a]" />
@@ -186,7 +184,7 @@ export function UploadPage({ collection, onAddDocument }: Props) {
       <section className="mt-10 flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[12px] leading-5 text-[var(--muted)]">
           {documents.length
-            ? "You can add more sources later from collection settings."
+            ? "Your document is stored. It will become chat-ready after ingestion."
             : "Add at least one document before starting a chat."}
         </p>
         <button
