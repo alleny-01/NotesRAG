@@ -2,6 +2,7 @@ import { useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import {
   ArrowRight,
   CheckCircle2,
+  CircleAlert,
   FileText,
   LoaderCircle,
   UploadCloud,
@@ -20,6 +21,17 @@ const size = (bytes: number) =>
   bytes < 1_000_000
     ? `${Math.max(1, Math.round(bytes / 1024))} KB`
     : `${(bytes / 1_000_000).toFixed(1)} MB`;
+
+function documentState(document: Collection["documents"][number]) {
+  if (document.status === "ready") return "Ready to chat";
+  if (document.status === "failed") return "Indexing failed";
+  if (document.status === "embedding") {
+    const total = document.chunkCount ?? 0;
+    const complete = document.embeddedChunkCount ?? 0;
+    return total ? `Indexing ${complete}/${total} passages` : "Preparing passages";
+  }
+  return "Queued for indexing";
+}
 
 export function UploadPage({ collection, onAddDocument }: Props) {
   const input = useRef<HTMLInputElement>(null);
@@ -143,10 +155,16 @@ export function UploadPage({ collection, onAddDocument }: Props) {
                       {document.filename}
                     </p>
                     <p className="mt-0.5 text-[10px] text-[var(--muted)]">
-                      {size(document.size)} · Saved · awaiting ingestion
+                      {size(document.size)} · {documentState(document)}
                     </p>
                   </div>
-                  <CheckCircle2 size={17} className="text-[#63945a]" />
+                  {document.status === "ready" ? (
+                    <CheckCircle2 size={17} className="text-[#63945a]" />
+                  ) : document.status === "failed" ? (
+                    <CircleAlert size={17} className="text-[#a45353]" />
+                  ) : (
+                    <LoaderCircle size={16} className="animate-spin text-[var(--purple)]" />
+                  )}
                 </div>
               ))}
             </div>
@@ -184,7 +202,7 @@ export function UploadPage({ collection, onAddDocument }: Props) {
       <section className="mt-10 flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[12px] leading-5 text-[var(--muted)]">
           {documents.length
-            ? "Your document is stored. It will become chat-ready after ingestion."
+            ? "Your document is stored. Its indexing status updates here as it becomes chat-ready."
             : "Add at least one document before starting a chat."}
         </p>
         <button

@@ -6,6 +6,8 @@ export type CollectionDocument = {
   storagePath: string;
   size: number;
   pageCount?: number;
+  chunkCount?: number;
+  embeddedChunkCount?: number;
   status: DocumentStatus;
   addedAt: string;
   content?: string;
