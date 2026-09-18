@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type AppRoute =
   | { name: "library" }
@@ -6,6 +6,8 @@ export type AppRoute =
   | { name: "upload"; collectionId: string }
   | { name: "workspace"; collectionId: string }
   | { name: "settings"; collectionId: string };
+
+const navigationStartEvent = "notesrag:navigation-start";
 
 function readRoute(): AppRoute | null {
   const match = window.location.hash.match(/^#app(?:\/(.*))?$/);
@@ -29,15 +31,35 @@ export function routeHref(route: AppRoute) {
 }
 
 export function navigate(route: AppRoute) {
-  window.location.hash = routeHref(route).slice(1);
+  const nextHash = routeHref(route);
+  if (window.location.hash === nextHash) return;
+  window.dispatchEvent(new Event(navigationStartEvent));
+  window.location.hash = nextHash.slice(1);
 }
 
 export function useAppRoute() {
   const [route, setRoute] = useState<AppRoute | null>(readRoute);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const completeTimer = useRef<number | undefined>(undefined);
+
   useEffect(() => {
-    const update = () => setRoute(readRoute());
+    const update = () => {
+      setRoute(readRoute());
+      window.clearTimeout(completeTimer.current);
+      completeTimer.current = window.setTimeout(() => setIsNavigating(false), 280);
+    };
+    const start = () => {
+      window.clearTimeout(completeTimer.current);
+      setIsNavigating(true);
+    };
     window.addEventListener("hashchange", update);
-    return () => window.removeEventListener("hashchange", update);
+    window.addEventListener(navigationStartEvent, start);
+    return () => {
+      window.removeEventListener("hashchange", update);
+      window.removeEventListener(navigationStartEvent, start);
+      window.clearTimeout(completeTimer.current);
+    };
   }, []);
-  return route;
+
+  return { route, isNavigating };
 }

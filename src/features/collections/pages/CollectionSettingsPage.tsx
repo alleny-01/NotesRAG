@@ -7,6 +7,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { navigate } from "../../../app/navigation";
+import { Spinner } from "../../../components/ui/spinner";
 import type { Collection } from "../types/domain";
 
 type CollectionSettingsPageProps = {
@@ -35,6 +36,10 @@ export function CollectionSettingsPage({
   const [documentToRemove, setDocumentToRemove] = useState<string | null>(null);
   const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] =
     useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [isRemovingDocument, setIsRemovingDocument] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [actionError, setActionError] = useState("");
   const selectedDocument = collection.documents.find(
     (document) => document.id === documentToRemove,
   );
@@ -42,9 +47,17 @@ export function CollectionSettingsPage({
     event.preventDefault();
     const nextName = name.trim();
     if (!nextName) return;
-    await onRename(collection.id, nextName);
-    setRenameSaved(true);
-    window.setTimeout(() => setRenameSaved(false), 2200);
+    setActionError("");
+    setIsRenaming(true);
+    try {
+      await onRename(collection.id, nextName);
+      setRenameSaved(true);
+      window.setTimeout(() => setRenameSaved(false), 2200);
+    } catch (renameError) {
+      setActionError(renameError instanceof Error ? renameError.message : "We could not save this name.");
+    } finally {
+      setIsRenaming(false);
+    }
   };
 
   return (
@@ -87,7 +100,7 @@ export function CollectionSettingsPage({
               />
               <button
                 type="submit"
-                disabled={!name.trim() || name.trim() === collection.name}
+                disabled={isRenaming || !name.trim() || name.trim() === collection.name}
                 className="h-11 rounded-md bg-[var(--purple)] px-4 text-[12px] font-medium text-white transition duration-200 ease-out hover:-translate-y-px hover:bg-[var(--purple-dark)] active:translate-y-0 disabled:cursor-not-allowed disabled:bg-[#b7a4c5]"
               >
                 Save name
@@ -195,6 +208,9 @@ export function CollectionSettingsPage({
           </div>
         </section>
       </div>
+      {actionError && (
+        <p className="mb-5 bg-[#fff7f7] px-3 py-2 text-[12px] text-[#8f3d42]" role="alert">{actionError}</p>
+      )}
       {selectedDocument && (
         <div className="fixed inset-0 z-50 grid place-items-center p-4">
           <button
@@ -229,13 +245,22 @@ export function CollectionSettingsPage({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  void onRemoveDocument(collection.id, selectedDocument.id);
-                  setDocumentToRemove(null);
+                onClick={async () => {
+                  setActionError("");
+                  setIsRemovingDocument(true);
+                  try {
+                    await onRemoveDocument(collection.id, selectedDocument.id);
+                    setDocumentToRemove(null);
+                  } catch (removeError) {
+                    setActionError(removeError instanceof Error ? removeError.message : "We could not remove this document.");
+                  } finally {
+                    setIsRemovingDocument(false);
+                  }
                 }}
-                className="h-9 rounded-md bg-[#963e43] px-3 text-[12px] font-medium text-white hover:bg-[#783034]"
+                disabled={isRemovingDocument}
+                className="inline-flex h-9 items-center gap-2 rounded-md bg-[#963e43] px-3 text-[12px] font-medium text-white hover:bg-[#783034] disabled:cursor-wait disabled:opacity-70"
               >
-                Remove document
+                {isRemovingDocument ? <><Spinner className="size-3.5 animate-spin" /> Removing…</> : "Remove document"}
               </button>
             </div>
           </section>
@@ -276,10 +301,20 @@ export function CollectionSettingsPage({
               </button>
               <button
                 type="button"
-                onClick={() => { void onDelete(collection.id); }}
-                className="inline-flex h-9 items-center gap-2 rounded-md bg-[#963e43] px-3 text-[12px] font-medium text-white hover:bg-[#783034]"
+                onClick={async () => {
+                  setActionError("");
+                  setIsDeleting(true);
+                  try {
+                    await onDelete(collection.id);
+                  } catch (deleteError) {
+                    setActionError(deleteError instanceof Error ? deleteError.message : "We could not delete this collection.");
+                    setIsDeleting(false);
+                  }
+                }}
+                disabled={isDeleting}
+                className="inline-flex h-9 items-center gap-2 rounded-md bg-[#963e43] px-3 text-[12px] font-medium text-white hover:bg-[#783034] disabled:cursor-wait disabled:opacity-70"
               >
-                Delete <ArrowRight size={14} />
+                {isDeleting ? <><Spinner className="size-3.5 animate-spin" /> Deleting…</> : <>Delete <ArrowRight size={14} /></>}
               </button>
             </div>
           </section>
