@@ -6,7 +6,6 @@ import {
   MessageCircle,
   SearchX,
   Send,
-  Sparkles,
 } from "lucide-react";
 import { navigate } from "../../../app/navigation";
 import type { ChatMessage, Collection } from "../types/domain";
@@ -174,9 +173,6 @@ export function WorkspacePage({ collection }: WorkspacePageProps) {
           <div className="flex h-12 items-center justify-between bg-[rgba(241,236,227,0.72)] px-4">
             <span className="text-[10px] font-semibold uppercase tracking-[0.13em] text-[var(--muted)]">
               Conversation
-            </span>
-            <span className="inline-flex items-center gap-1.5 text-[10px] text-[var(--purple)]">
-              <Sparkles size={12} /> Grounded mode
             </span>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">

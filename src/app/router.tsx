@@ -8,15 +8,52 @@ import { UploadPage } from "../features/collections/pages/UploadPage";
 import { WorkspacePage } from "../features/collections/pages/WorkspacePage";
 import { useUploadDocument } from "../features/documents/hooks/useUploadDocument";
 import { useDocumentStatus } from "../features/documents/hooks/useDocumentStatus";
+import { Skeleton } from "../components/ui/skeleton";
+import { Spinner } from "../components/ui/spinner";
 import { navigate, useAppRoute } from "./navigation";
 import { OnboardingPage } from "../features/onboarding/pages/OnboardingPage";
 
-function ProductLoading() {
-  return <div className="min-h-screen bg-[var(--canvas)] p-6"><div className="mx-auto h-12 max-w-[1400px] animate-pulse bg-[var(--paper)]" /><div className="mx-auto mt-12 h-36 max-w-[1400px] animate-pulse bg-[var(--paper)]" /></div>;
+function SessionBootScreen() {
+  return (
+    <main className="grid min-h-screen place-items-center bg-[var(--canvas)] p-6">
+      <div className="flex items-center gap-3 text-[12px] text-[var(--body)]">
+        <Spinner className="size-4 animate-spin text-[var(--purple)]" />
+        Restoring your study space…
+      </div>
+    </main>
+  );
 }
 
+function ProductLoading() {
+  return (
+    <div className="min-h-screen bg-[var(--canvas)] font-[var(--sans)] text-[var(--ink)]">
+      <header className="sticky top-0 z-30 bg-[color:color-mix(in_srgb,var(--canvas)_90%,transparent)] backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-4 sm:px-6 lg:px-9">
+          <div className="flex items-center gap-3"><Skeleton className="h-6 w-6 rounded-md" /><Skeleton className="h-4 w-24" /></div>
+          <div className="flex items-center gap-2"><Skeleton className="h-9 w-9" /><Skeleton className="h-9 w-28" /></div>
+        </div>
+      </header>
+      <main className="mx-auto w-full max-w-[1400px] px-4 py-9 sm:px-6 sm:py-12 lg:px-9">
+        <Skeleton className="h-3 w-24" /><Skeleton className="mt-3 h-6 w-64" />
+        <div className="mt-8 bg-[var(--paper)] p-3 shadow-[0_10px_22px_rgba(66,47,39,0.04)]"><Skeleton className="h-10 w-full bg-white" /></div>
+        <div className="mt-9 space-y-2">
+          {["one", "two", "three"].map((item) => <div key={item} className="flex items-center gap-4 bg-[var(--cream)] px-4 py-5 shadow-[0_1px_0_rgba(66,47,39,0.03)]"><Skeleton className="h-9 w-9" /><div className="flex-1"><Skeleton className="h-5 w-40" /><Skeleton className="mt-2 h-3 w-52" /></div><Skeleton className="h-8 w-16" /></div>)}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function PageNavigationLoader() {
+  return (
+    <div className="fixed inset-0 z-[70] grid place-items-center bg-[var(--canvas)]" role="status" aria-label="Loading page">
+      <Spinner className="size-8 animate-[spin_1.35s_linear_infinite] text-[var(--purple)] drop-shadow-[0_4px_12px_rgba(95,61,130,0.24)] motion-reduce:animate-none" />
+    </div>
+  );
+}
 function ProductApp() {
-  const route = useAppRoute() ?? { name: "library" as const };
+  const { route: routeFromLocation, isNavigating } = useAppRoute();
+  const route = routeFromLocation ?? { name: "library" as const };
   const collectionState = useCollections();
   const documentUpload = useUploadDocument();
   useDocumentStatus();
@@ -24,7 +61,7 @@ function ProductApp() {
   const activeCollection = "collectionId" in route ? collections.find((collection) => collection.id === route.collectionId) : undefined;
 
   if (collectionState.isLoading) return <ProductLoading />;
-  if (collectionState.error) return <div className="grid min-h-screen place-items-center bg-[var(--canvas)] p-6 text-center"><div><p className="text-[13px] text-[#8f3d42]">We couldn’t load your library.</p><button type="button" onClick={() => collectionState.refetch()} className="mt-3 text-[12px] text-[var(--purple)]">Try again</button></div></div>;
+  if (collectionState.error) return <div className="grid min-h-screen place-items-center bg-[var(--canvas)] p-6 text-center"><div><p className="text-[13px] text-[#8f3d42]">We couldn’t load your library.</p><button type="button" onClick={() => collectionState.refetch()} className="mt-3 inline-flex items-center gap-2 text-[12px] text-[var(--purple)]"><Spinner className={collectionState.isFetching ? "size-3 animate-spin" : "hidden"} />Try again</button></div></div>;
 
   const create = async (name: string) => {
     const collection = await collectionState.create.mutateAsync(name);
@@ -32,6 +69,9 @@ function ProductApp() {
   };
   const addDocument = async (collectionId: string, file: File) => {
     await documentUpload.mutateAsync({ collectionId, file });
+  };
+  const recordOpen = (collectionId: string) => {
+    void collectionState.recordOpen.mutateAsync(collectionId);
   };
   const rename = async (collectionId: string, name: string) => { await collectionState.rename.mutateAsync({ collectionId, name }); };
   const removeDocument = async (collectionId: string, documentId: string) => {
@@ -45,19 +85,22 @@ function ProductApp() {
   };
 
   const body = (() => {
-    if (route.name === "library") return <LibraryPage collections={collections} />;
+    if (route.name === "library") return <LibraryPage collections={collections} onOpenCollection={recordOpen} />;
     if (route.name === "new-collection") return <CreateCollectionPage onCreate={create} />;
-    if (!activeCollection) return <LibraryPage collections={collections} />;
+    if (!activeCollection) return <LibraryPage collections={collections} onOpenCollection={recordOpen} />;
     if (route.name === "upload") return <UploadPage collection={activeCollection} onAddDocument={addDocument} />;
     if (route.name === "settings") return <CollectionSettingsPage collection={activeCollection} onRename={rename} onRemoveDocument={removeDocument} onDelete={deleteCollection} />;
     return <WorkspacePage collection={activeCollection} />;
   })();
 
-  return <CollectionShell collection={activeCollection}>{body}</CollectionShell>;
+  return <>
+    <CollectionShell collection={activeCollection} isRefreshing={collectionState.isFetching}>{body}</CollectionShell>
+    {isNavigating && <PageNavigationLoader />}
+  </>;
 }
 
 export function AppRouter() {
   const { session, isLoading } = useSession();
-  if (isLoading) return <OnboardingPage />;
+  if (isLoading) return <SessionBootScreen />;
   return session ? <ProductApp /> : <OnboardingPage />;
 }

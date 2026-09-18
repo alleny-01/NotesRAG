@@ -18,6 +18,7 @@ export type Collection = {
   name: string;
   createdAt: string;
   lastUsedAt?: string;
+  openCount: number;
   documents: CollectionDocument[];
 };
 

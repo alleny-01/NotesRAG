@@ -1,4 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+/// <reference path="../_shared/deno-runtime.d.ts" />
+import { createClient } from "npm:@supabase/supabase-js@2.116.0";
 import { chunkPages, type SourcePage } from "../_shared/chunking.ts";
 import { corsHeaders, jsonResponse } from "../_shared/cors.ts";
 import { embedDocuments } from "../_shared/voyage.ts";

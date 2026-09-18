@@ -1,6 +1,7 @@
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { ArrowLeft, ArrowUpRight, Check, Mail, X } from "lucide-react";
 import { sendMagicLink, signInWithGoogle } from "../api";
+import { Spinner } from "../../../components/ui/spinner";
 
 type AuthModalProps = {
   isOpen: boolean;
@@ -89,7 +90,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             <div className="auth-actions">
               <button className="auth-provider-button" type="button" onClick={beginGoogleSignIn} disabled={isSubmitting}>
                 <GoogleIcon />
-                <span>{isSubmitting ? "Redirecting…" : "Continue with Google"}</span>
+                <span>{isSubmitting ? "Redirecting…" : "Continue with Google"}</span>{isSubmitting ? <Spinner className="size-4 animate-spin" /> : <ArrowUpRight size={16} />}
                 <ArrowUpRight size={16} />
               </button>
               <div className="auth-divider"><span>or</span></div>
@@ -112,7 +113,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <label htmlFor="auth-email">Email address</label>
               <input id="auth-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" autoComplete="email" autoFocus />
               {error && <p className="auth-error" role="alert">{error}</p>}
-              <button className="auth-submit" type="submit" disabled={isSubmitting}>{isSubmitting ? "Sending link…" : "Send magic link"}<ArrowUpRight size={16} /></button>
+              <button className="auth-submit" type="submit" disabled={isSubmitting}>{isSubmitting ? "Sending link…" : "Send magic link"}{isSubmitting ? <Spinner className="size-4 animate-spin" /> : <ArrowUpRight size={16} />}</button>
             </form>
           </div>
         )}

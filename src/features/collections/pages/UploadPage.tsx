@@ -4,11 +4,11 @@ import {
   CheckCircle2,
   CircleAlert,
   FileText,
-  LoaderCircle,
   UploadCloud,
   XCircle,
 } from "lucide-react";
 import { navigate } from "../../../app/navigation";
+import { Spinner } from "../../../components/ui/spinner";
 import type { Collection } from "../types/domain";
 
 type Props = {
@@ -114,7 +114,7 @@ export function UploadPage({ collection, onAddDocument }: Props) {
               >
                 {checking ? (
                   <>
-                    <LoaderCircle size={15} className="animate-spin" /> Checking
+                    <Spinner className="size-[15px] animate-spin" /> Checking
                     document…
                   </>
                 ) : (
@@ -163,7 +163,7 @@ export function UploadPage({ collection, onAddDocument }: Props) {
                   ) : document.status === "failed" ? (
                     <CircleAlert size={17} className="text-[#a45353]" />
                   ) : (
-                    <LoaderCircle size={16} className="animate-spin text-[var(--purple)]" />
+                    <Spinner className="size-4 animate-spin text-[var(--purple)]" />
                   )}
                 </div>
               ))}
